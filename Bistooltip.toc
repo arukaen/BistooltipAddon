@@ -1,9 +1,9 @@
 ## Interface: 50503
 ## Title: BiS-Tooltip
-## Notes: v9.09. In game BiS lists and item tooltip enrichment.
+## Notes: v9.10. In game BiS lists and item tooltip enrichment.
 ## Author: Hellixoid
 ## Author: Dweem
-## Version: 9.09
+## Version: 9.10
 ## SavedVariables: BisTooltipDB
 ## OptionalDeps:
 

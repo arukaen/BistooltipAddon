@@ -40,7 +40,7 @@ end
 function BistooltipAddon:OnInitialize()
     createEquipmentWatcher()
     BistooltipAddon.AceAddonName = "Bis-Tooltip"
-    BistooltipAddon.AddonNameAndVersion = "Bis-Tooltip v9.09"
+    BistooltipAddon.AddonNameAndVersion = "Bis-Tooltip v9.10"
     BistooltipAddon:initConfig()
     BistooltipAddon:addMapIcon()
     BistooltipAddon:initBislists()
