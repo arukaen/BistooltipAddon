@@ -5,15 +5,54 @@ local LDBIcon = LDB and LibStub("LibDBIcon-1.0", true)
 local icon_loaded = false
 local icon_name = "BisTooltipIcon"
 
+-- Detect which expansion the client is running
+local function detectExpansion()
+    local _, _, _, tocVersion = GetBuildInfo()
+    if tocVersion and tocVersion < 20000 then
+        return "classic"
+    elseif tocVersion and tocVersion < 30000 then
+        return "tbc"
+    else
+        return "mop"
+    end
+end
+
+Bistooltip_expansion = detectExpansion()
+
 local sources = {
-    wh = "wh",
-    wowtbc = "wowtbc"
+    wh_mop = "wh_mop",
+    wowtbc_mop = "wowtbc_mop",
+    wh_tbc = "wh_tbc",
+    wowtbc_tbc = "wowtbc_tbc",
+    wh_classic = "wh_classic",
+    wowtbc_classic = "wowtbc_classic"
 }
 
-Bistooltip_source_to_url = {
-    ["wh"] = "wowhead.com/mop-classic",
-    ["wowtbc"] = "wowtbc.gg/mop"
+local all_source_urls = {
+    ["wh_mop"] = "wowhead.com/mop-classic",
+    ["wowtbc_mop"] = "wowtbc.gg/mop",
+    ["wh_tbc"] = "wowhead.com/tbc",
+    ["wowtbc_tbc"] = "wowtbc.gg",
+    ["wh_classic"] = "wowhead.com/classic",
+    ["wowtbc_classic"] = "wowtbc.gg/classic"
 }
+
+local expansion_sources = {
+    mop = { "wh_mop", "wowtbc_mop" },
+    tbc = { "wh_tbc", "wowtbc_tbc" },
+    classic = { "wh_classic", "wowtbc_classic" }
+}
+
+-- Build the source_to_url table filtered to current expansion
+local function buildSourceUrls()
+    local urls = {}
+    for _, key in ipairs(expansion_sources[Bistooltip_expansion]) do
+        urls[key] = all_source_urls[key]
+    end
+    return urls
+end
+
+Bistooltip_source_to_url = buildSourceUrls()
 
 local db_defaults = {
     char = {
@@ -205,6 +244,10 @@ local function openSourceSelectDialog()
     frame:AddChild(sourceDropdown)
 end
 
+local function getDefaultSource()
+    return expansion_sources[Bistooltip_expansion][1]
+end
+
 local function migrateAddonDB()
     if not BistooltipAddon.db.char["version"] or BistooltipAddon.db.char.version < 9.0 then
         BistooltipAddon.db.char.version = 9.0
@@ -214,8 +257,26 @@ local function migrateAddonDB()
         BistooltipAddon.db.char.spec_index = 1
         BistooltipAddon.db.char.phase_index = 1
     end
+    -- Migrate old source keys to new expansion-suffixed keys
+    local ds = BistooltipAddon.db.char["data_source"]
+    if ds == "wh" then
+        BistooltipAddon.db.char.data_source = "wh_mop"
+    elseif ds == "wowtbc" then
+        BistooltipAddon.db.char.data_source = "wowtbc_mop"
+    end
+    -- Validate source belongs to current expansion, reset if not
+    local valid = false
+    for _, key in ipairs(expansion_sources[Bistooltip_expansion]) do
+        if BistooltipAddon.db.char["data_source"] == key then
+            valid = true
+            break
+        end
+    end
+    if not valid then
+        BistooltipAddon.db.char.data_source = nil
+    end
     if BistooltipAddon.db.char["data_source"] == nil then
-        BistooltipAddon.db.char.data_source = sources.wh
+        BistooltipAddon.db.char.data_source = getDefaultSource()
         openSourceSelectDialog()
     end
 end
@@ -230,16 +291,36 @@ end
 
 local function enableDataSource(data_source)
 
-    if data_source == sources.wowtbc then
+    if data_source == sources.wowtbc_mop then
         Bistooltip_bislists = Bistooltip_wowtbc_bislists;
         Bistooltip_items = Bistooltip_wowtbc_items;
         Bistooltip_classes = Bistooltip_wowtbc_classes;
         Bistooltip_phases = Bistooltip_wowtbc_phases;
-    elseif data_source == sources.wh then
+    elseif data_source == sources.wh_mop then
         Bistooltip_bislists = Bistooltip_wh_bislists;
         Bistooltip_items = Bistooltip_wh_items;
         Bistooltip_classes = Bistooltip_wh_classes;
         Bistooltip_phases = Bistooltip_wh_phases;
+    elseif data_source == sources.wh_tbc then
+        Bistooltip_bislists = Bistooltip_wh_tbc_bislists;
+        Bistooltip_items = Bistooltip_wh_tbc_items;
+        Bistooltip_classes = Bistooltip_wh_tbc_classes;
+        Bistooltip_phases = Bistooltip_wh_tbc_phases;
+    elseif data_source == sources.wowtbc_tbc then
+        Bistooltip_bislists = Bistooltip_wowtbc_tbc_bislists;
+        Bistooltip_items = Bistooltip_wowtbc_tbc_items;
+        Bistooltip_classes = Bistooltip_wowtbc_tbc_classes;
+        Bistooltip_phases = Bistooltip_wowtbc_tbc_phases;
+    elseif data_source == sources.wh_classic then
+        Bistooltip_bislists = Bistooltip_wh_classic_bislists;
+        Bistooltip_items = Bistooltip_wh_classic_items;
+        Bistooltip_classes = Bistooltip_wh_classic_classes;
+        Bistooltip_phases = Bistooltip_wh_classic_phases;
+    elseif data_source == sources.wowtbc_classic then
+        Bistooltip_bislists = Bistooltip_wowtbc_classic_bislists;
+        Bistooltip_items = Bistooltip_wowtbc_classic_items;
+        Bistooltip_classes = Bistooltip_wowtbc_classic_classes;
+        Bistooltip_phases = Bistooltip_wowtbc_classic_phases;
     end
     Bistooltip_phases_string = ""
     for i, phase in ipairs(Bistooltip_phases) do
@@ -283,12 +364,21 @@ function BistooltipAddon:addMapIcon()
     end
 end
 
-function BistooltipAddon:changeDataSource(spec_name)
-    --reset selected spec (commented now because we have same spec list for both data sources)
-    --BistooltipAddon.db.char.class_index = 1
-    --BistooltipAddon.db.char.spec_index = 1
-    --BistooltipAddon.db.char.phase_index = 1
-    enableDataSource(spec_name)
+function BistooltipAddon:changeDataSource(source_key)
+    enableDataSource(source_key)
+
+    -- Reset indices if they exceed the new source's class/spec/phase counts
+    if BistooltipAddon.db.char.class_index > #Bistooltip_classes then
+        BistooltipAddon.db.char.class_index = 1
+        BistooltipAddon.db.char.spec_index = 1
+    end
+    local ci = BistooltipAddon.db.char.class_index
+    if ci and Bistooltip_classes[ci] and BistooltipAddon.db.char.spec_index > #Bistooltip_classes[ci].specs then
+        BistooltipAddon.db.char.spec_index = 1
+    end
+    if BistooltipAddon.db.char.phase_index > #Bistooltip_phases then
+        BistooltipAddon.db.char.phase_index = 1
+    end
 
     BistooltipAddon:initBislists()
     BistooltipAddon:reloadData()

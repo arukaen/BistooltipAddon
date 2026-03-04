@@ -1,4 +1,4 @@
-## Interface: 50503, 20505, 11508
+## Interface: 50503
 ## Title: BiS-Tooltip
 ## Notes: v10.0. In game BiS lists and item tooltip enrichment. Supports MoP, TBC, and Classic.
 ## Author: Hellixoid

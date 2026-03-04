@@ -27,6 +27,7 @@ Bistooltip_spec_icons["Druid"]["classIcon"] = 625999;
 Bistooltip_spec_icons["Druid"]["Balance"] = 136096;
 Bistooltip_spec_icons["Druid"]["Guardian"] = 132276;
 Bistooltip_spec_icons["Druid"]["Feral"] = 132115;
+Bistooltip_spec_icons["Druid"]["Feral tank"] = 132276;
 Bistooltip_spec_icons["Druid"]["Restoration"] = 136041;
 Bistooltip_spec_icons["Hunter"] = {};
 Bistooltip_spec_icons["Hunter"]["classIcon"] = 626000;
