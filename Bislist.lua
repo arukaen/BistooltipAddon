@@ -29,6 +29,43 @@ local isHorde = UnitFactionGroup("player") == "Horde"
 
 local bisListFrameName = "BistooltipAddonBisListFrame"
 
+local function setupItemFrameCallbacks(item_frame, item_id, with_checkmark)
+    local name, ilink, _, _, _, _, _, _, _, icon, _, _, _, bindType = GetItemInfo(item_id)
+    if not name then
+        return
+    end
+    item_frame:SetImage(icon)
+    if with_checkmark == true then
+        local checkMark = item_frame.frame:CreateTexture(nil, "OVERLAY")
+        checkMark:SetWidth(32)
+        checkMark:SetHeight(32)
+        checkMark:SetPoint("CENTER", 6, -8)
+        checkMark:SetTexture("Interface\\AddOns\\Bistooltip\\checkmark-16.tga")
+        table.insert(checkmarks, checkMark)
+    end
+
+    if (bindType == 2) then
+        local boeMark = item_frame.frame:CreateTexture(nil, "OVERLAY")
+        boeMark:SetWidth(12)
+        boeMark:SetHeight(12)
+        boeMark:SetPoint("TOPLEFT", 2, -5)
+        boeMark:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
+        table.insert(boemarks, boeMark)
+    end
+
+    item_frame:SetCallback("OnClick", function(button)
+        SetItemRef(ilink, ilink, "LeftButton");
+    end)
+    item_frame:SetCallback("OnEnter", function(widget)
+        GameTooltip:SetOwner(item_frame.frame)
+        GameTooltip:SetPoint("TOPRIGHT", item_frame.frame, "TOPRIGHT", 220, -13);
+        GameTooltip:SetHyperlink(ilink)
+    end)
+    item_frame:SetCallback("OnLeave", function(widget)
+        GameTooltip:Hide()
+    end)
+end
+
 local function createItemFrame(item_id, size, with_checkmark)
     if item_id < 0 then
         local f = AceGUI:Create("Label")
@@ -36,45 +73,41 @@ local function createItemFrame(item_id, size, with_checkmark)
     end
     local item_frame = AceGUI:Create("Icon")
     item_frame:SetImageSize(size, size)
-    items[item_id] = Item:CreateFromItemID(item_id);
 
-    if (items[item_id]:GetItemID()) then
-        items[item_id]:ContinueOnItemLoad(function()
-            local ilink = items[item_id]:GetItemLink()
-            item_frame:SetImage(items[item_id]:GetItemIcon())
-            if with_checkmark == true then
-                local checkMark = item_frame.frame:CreateTexture(nil, "OVERLAY")
-                checkMark:SetWidth(32)
-                checkMark:SetHeight(32)
-                checkMark:SetPoint("CENTER", 6, -8)
-                checkMark:SetTexture("Interface\\AddOns\\Bistooltip\\checkmark-16.tga")
-                table.insert(checkmarks, checkMark)
-            end
-
-            local _, _, _, _, _, _, _, _, _, _, _, _, _, bindType = GetItemInfo(item_id)
-            if (bindType == 2) then
-                local boeMark = item_frame.frame:CreateTexture(nil, "OVERLAY")
-                boeMark:SetWidth(12)
-                boeMark:SetHeight(12)
-                boeMark:SetPoint("TOPLEFT", 2, -5)
-                boeMark:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
-                table.insert(boemarks, boeMark)
-            end
-
-            item_frame:SetCallback("OnClick", function(button)
-                SetItemRef(ilink, ilink, "LeftButton");
+    if Item and Item.CreateFromItemID then
+        items[item_id] = Item:CreateFromItemID(item_id);
+        if (items[item_id]:GetItemID()) then
+            items[item_id]:ContinueOnItemLoad(function()
+                setupItemFrameCallbacks(item_frame, item_id, with_checkmark)
             end)
-            item_frame:SetCallback("OnEnter", function(widget)
-                GameTooltip:SetOwner(item_frame.frame)
-                GameTooltip:SetPoint("TOPRIGHT", item_frame.frame, "TOPRIGHT", 220, -13);
-                GameTooltip:SetHyperlink(ilink)
-            end)
-            item_frame:SetCallback("OnLeave", function(widget)
-                GameTooltip:Hide()
-            end)
-        end)
+        end
+    else
+        setupItemFrameCallbacks(item_frame, item_id, with_checkmark)
     end
     return item_frame
+end
+
+local function setupSpellFrameCallbacks(spell_frame, spell_id)
+    local name, rank, icon = GetSpellInfo(spell_id)
+    if not name then
+        return
+    end
+    spell_frame:SetImage(icon)
+    local link = GetSpellLink(spell_id)
+    if link == nil then
+        link = "\124cffffd000\124Hspell:" .. spell_id .. "\124h[" .. name .. "]\124h\124r"
+    end
+    spell_frame:SetCallback("OnClick", function(button)
+        SetItemRef(link, link, "LeftButton");
+    end)
+    spell_frame:SetCallback("OnEnter", function(widget)
+        GameTooltip:SetOwner(spell_frame.frame)
+        GameTooltip:SetPoint("TOPRIGHT", spell_frame.frame, "TOPRIGHT", 220, -13);
+        GameTooltip:SetHyperlink(link)
+    end)
+    spell_frame:SetCallback("OnLeave", function(widget)
+        GameTooltip:Hide()
+    end)
 end
 
 local function createSpellFrame(spell_id, size)
@@ -84,28 +117,16 @@ local function createSpellFrame(spell_id, size)
     end
     local spell_frame = AceGUI:Create("Icon")
     spell_frame:SetImageSize(size, size)
-    spells[spell_id] = Spell:CreateFromSpellID(spell_id);
 
-    if (spells[spell_id]:GetSpellID()) then
-        spells[spell_id]:ContinueOnSpellLoad(function()
-            local name, rank, icon, castTime, minRange, maxRange = GetSpellInfo(spell_id)
-            spell_frame:SetImage(icon)
-            local link = GetSpellLink(spell_id)
-            if link == nil then
-                link = "\124cffffd000\124Hspell:" .. spell_id .. "\124h[" .. name .. "]\124h\124r"
-            end
-            spell_frame:SetCallback("OnClick", function(button)
-                SetItemRef(link, link, "LeftButton");
+    if Spell and Spell.CreateFromSpellID then
+        spells[spell_id] = Spell:CreateFromSpellID(spell_id);
+        if (spells[spell_id]:GetSpellID()) then
+            spells[spell_id]:ContinueOnSpellLoad(function()
+                setupSpellFrameCallbacks(spell_frame, spell_id)
             end)
-            spell_frame:SetCallback("OnEnter", function(widget)
-                GameTooltip:SetOwner(spell_frame.frame)
-                GameTooltip:SetPoint("TOPRIGHT", spell_frame.frame, "TOPRIGHT", 220, -13);
-                GameTooltip:SetHyperlink(link)
-            end)
-            spell_frame:SetCallback("OnLeave", function(widget)
-                GameTooltip:Hide()
-            end)
-        end)
+        end
+    else
+        setupSpellFrameCallbacks(spell_frame, spell_id)
     end
     return spell_frame
 end
